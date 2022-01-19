@@ -1,0 +1,3 @@
+# Servers to be managed
+[server]
+srv ansible_connection=ssh ansible_user="{{ user }}"

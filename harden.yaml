@@ -1,0 +1,40 @@
+# Usage : `ansible-playbook harden.yaml -K -e "user=<username>" -k -i hosts`
+
+- name: Harden Archlinux server
+  hosts: all
+  remote_user: "{{ user }}"
+  become: yes
+  gather_facts: yes
+
+  roles:
+    - role: archlinux_hardening
+      vars:
+        sshd_hardening: true
+        sshd:
+          ### Make sure you understand the precedence when working with these values!!
+          # You need to set at least one of the four following variables
+          # allowusers - ssh login is allowed only for specified user names
+          allowusers: <username>
+          # allowgroups:
+          # denyusers:
+          # denygroups:
+          
+          # Change banner msg
+          issue_net_warning_banner: |
+            \v
+             _________________________________________ 
+            / UNAUTHORIZED ACCESS TO THIS DEVICE IS   \
+            | PROHIBITED. You must have explicit,     |
+            | authorized permission to access or      |
+            | configure this device. Unauthorized     |
+            | attempts and actions to access or use   |
+            | this system may result in civil and/or  |
+            | criminal penalties. All activities      |
+            | performed on this device are logged and |
+            \ monitored.                              /
+             ----------------------------------------- 
+                    \   ^__^
+                     \  (oO)\_______
+                        (__)\       )\/\
+                            ||----w |
+                            ||     ||

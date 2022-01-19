@@ -1,0 +1,11 @@
+---
+# tasks file for archlinux-hardening
+
+- name: sshd hardening
+  import_tasks: sshd.yml
+  when: sshd_hardening | bool
+  become: true
+  tags:
+    - all
+    - sshd
+    - ssh

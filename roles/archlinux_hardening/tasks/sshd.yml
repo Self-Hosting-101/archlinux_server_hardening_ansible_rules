@@ -1,0 +1,277 @@
+# Setup ssh key
+
+# ssh-keygen -t ed25519
+# ssh-copy-id -i ~/.ssh/id_ed25519.pub  user@host
+
+# Using `ssh-copy-id` set the good rights!
+
+# Then edit your ~/ssh/config file
+
+# Host srv
+#  Hostname host
+#  Port 22
+#  User user
+#  PubKeyAuthentication yes
+#  IdentityFile ~/.ssh/id_ed25519
+
+
+
+# Setup `/etc/issue.bet` banner for ssh rule "5.2.19 - Ensure SSH warning banner is configured"
+
+- name: 1.7.1.3 - Ensure remote login warning banner is configured properly
+  template:
+      src: etc/issue.net.j2
+      dest: /etc/issue.net
+
+- name: 1.7.1.6 - Ensure permissions on /etc/issue.net are configured
+  file:
+      dest: /etc/issue.net
+      state: file
+      owner: root
+      group: root
+      mode: 0644
+
+
+# Setup SSH rules
+
+- name: 5.2.1 - Ensure permissions on /etc/ssh/sshd_config are configured
+  file:
+      dest: /etc/ssh/sshd_config
+      state: file
+      owner: root
+      group: root
+      mode: 0600
+
+
+- name: 5.2.2 - Ensure permissions on SSH private host key files are configured
+  block:
+      - name: 5.2.2 - Ensure permissions on SSH private host key files are configured - find keys
+        find:
+            paths: /etc/ssh
+            patterns: ssh_host_*_key
+        register: ssh_private_host_keys
+
+      - name: 5.2.2 - Ensure permissions on SSH private host key files are configured - change permissions
+        file:
+            dest: "{{ item.path }}"
+            state: file
+            owner: root
+            group: root
+            mode: 0600
+        with_items: "{{ ssh_private_host_keys.files }}"
+
+
+- name: 5.2.3 - Ensure permissions on SSH public host key files are configured
+  block:
+      - name: 5.2.3 - Ensure permissions on SSH public host key files are configured - find keys
+        find:
+            paths: /etc/ssh
+            patterns: ssh_host_*_key.pub
+        register: ssh_public_host_keys
+
+      - name: 5.2.3 - Ensure permissions on SSH public host key files are configured - change permissions
+        file:
+            dest: "{{ item.path }}"
+            state: file
+            owner: root
+            group: root
+            mode: 0644
+        with_items: "{{ ssh_public_host_keys.files }}"
+
+
+#- name: "5.2.4 - Ensure SSH Protocol is set to 2"
+# This option is deprecated.
+
+
+- name: 5.2.5 - Ensure SSH LogLevel is appropriate
+  lineinfile:
+      state: present
+      dest: /etc/ssh/sshd_config
+      regexp: ^LogLevel
+      line: LogLevel INFO
+
+
+- name: 5.2.6 - Ensure SSH X11 forwarding is disabled
+  lineinfile:
+      state: present
+      dest: /etc/ssh/sshd_config
+      regexp: ^X11Forwarding
+      line: X11Forwarding no
+
+
+- name: 5.2.7 - Ensure SSH MaxAuthTries is set to 4 or less
+  lineinfile:
+      state: present
+      dest: /etc/ssh/sshd_config
+      regexp: ^(#)?MaxAuthTries \d
+      line: MaxAuthTries 4
+
+
+- name: 5.2.8 - Ensure SSH IgnoreRhosts is enabled
+  lineinfile:
+      state: present
+      dest: /etc/ssh/sshd_config
+      regexp: ^IgnoreRhosts
+      line: IgnoreRhosts yes
+
+
+- name: 5.2.9 - Ensure SSH HostbasedAuthentication is disabled
+  lineinfile:
+      state: present
+      dest: /etc/ssh/sshd_config
+      regexp: ^HostbasedAuthentication
+      line: HostbasedAuthentication no
+
+
+- name: 5.2.10 - Ensure SSH root login is disabled
+  lineinfile:
+      state: present
+      dest: /etc/ssh/sshd_config
+      regexp: ^PermitRootLogin
+      line: PermitRootLogin no
+
+
+- name: 5.2.11 - Ensure SSH PermitEmptyPasswords is disabled
+  lineinfile:
+      state: present
+      dest: /etc/ssh/sshd_config
+      regexp: ^PermitEmptyPasswords
+      line: PermitEmptyPasswords no
+
+
+- name: 5.2.12 - Ensure SSH PermitUserEnvironment is disabled
+  lineinfile:
+      state: present
+      dest: /etc/ssh/sshd_config
+      regexp: ^PermitUserEnvironment
+      line: PermitUserEnvironment no
+
+
+- name: 5.2.13 - Ensure only strong Ciphers are used
+  lineinfile:
+      state: present
+      dest: /etc/ssh/sshd_config
+      regexp: ^Ciphers
+      line: Ciphers aes256-ctr,aes192-ctr,aes128-ctr
+
+
+- name: 5.2.14 - Ensure only approved MAC algorithms are used
+  lineinfile:
+      state: present
+      dest: /etc/ssh/sshd_config
+      regexp: ^MACs
+      line: MACs hmac-sha2-512,hmac-sha2-256
+
+
+- name: 5.2.15 - Ensure only strong Key Exchange algorithms are used
+  lineinfile:
+      state: present
+      dest: /etc/ssh/sshd_config
+      regexp: ^KexAlgorithms
+      line: KexAlgorithms ecdh-sha2-nistp256,ecdh-sha2-nistp384,ecdh-sha2-nistp521,diffie-hellman-group-exchange-sha256,diffie-hellman-group16-sha512,diffie-hellman-group18-sha512,diffie-hellman-group14-sha256
+
+
+- name: 5.2.16 - Ensure SSH Idle Timeout Interval is configured
+  block:
+      - name: 5.2.16 - Ensure SSH Idle Timeout Interval is configured - ClientAliveInterval
+        lineinfile:
+            state: present
+            dest: /etc/ssh/sshd_config
+            regexp: ^ClientAliveInterval
+            line: ClientAliveInterval 300
+
+      - name: 5.2.16 - Ensure SSH Idle Timeout Interval is configured - ClientAliveCountMax
+        lineinfile:
+            state: present
+            dest: /etc/ssh/sshd_config
+            regexp: ^ClientAliveCountMax
+            line: ClientAliveCountMax 0
+
+
+- name: 5.2.17 - Ensure SSH LoginGraceTime is set to one minute or less
+  lineinfile:
+      state: present
+      dest: /etc/ssh/sshd_config
+      regexp: ^LoginGraceTime
+      line: LoginGraceTime 60
+
+
+- name: 5.2.18 - Ensure SSH access is limited
+  block:
+      - name: 5.2.18 - Ensure SSH access is limited - AllowUsers
+        lineinfile:
+            state: present
+            dest: /etc/ssh/sshd_config
+            regexp: ^AllowUsers
+            line: AllowUsers "{{ sshd['allowusers'] }}"
+        when: sshd['allowusers'] is defined
+
+      - name: 5.2.18 - Ensure SSH access is limited - AllowGroups
+        lineinfile:
+            state: present
+            dest: /etc/ssh/sshd_config
+            regexp: ^AllowGroups
+            line: AllowGroups "{{ sshd['allowgroups'] }}"
+        when: sshd['allowgroups'] is defined
+
+      - name: 5.2.18 - Ensure SSH access is limited - DenyUsers
+        lineinfile:
+            state: present
+            dest: /etc/ssh/sshd_config
+            regexp: ^DenyUsers
+            line: DenyUsers "{{ sshd['denyusers'] }}"
+        when: sshd['denyusers'] is defined
+
+      - name: 5.2.18 - Ensure SSH access is limited - DenyGroups
+        lineinfile:
+            state: present
+            dest: /etc/ssh/sshd_config
+            regexp: ^DenyGroups
+            line: DenyGroups "{{ sshd['denygroups'] }}"
+        when: sshd['denygroups'] is defined
+
+
+- name: 5.2.19 - Ensure SSH warning banner is configured
+  lineinfile:
+      state: present
+      dest: /etc/ssh/sshd_config
+      regexp: ^Banner
+      line: Banner /etc/issue.net
+
+
+- name: 5.2.20 - Ensure SSH PAM is enabled
+  lineinfile:
+      state: present
+      dest: /etc/ssh/sshd_config
+      regexp: ^UsePAM
+      line: UsePAM yes
+
+
+- name: 5.2.21 - Ensure SSH AllowTcpForwarding is disabled
+  lineinfile:
+      state: present
+      dest: /etc/ssh/sshd_config
+      regexp: ^AllowTcpForwarding
+      line: AllowTcpForwarding no
+
+
+- name: 5.2.22 - Ensure SSH MaxStartups is configured
+  lineinfile:
+      state: present
+      dest: /etc/ssh/sshd_config
+      regexp: ^MaxStartups
+      line: MaxStartups 10:30:60
+
+
+- name: 5.2.23 - Ensure SSH MaxSessions is set to 4 or less
+  lineinfile:
+      state: present
+      dest: /etc/ssh/sshd_config
+      regexp: ^MaxSessions
+      line: MaxSessions 4
+
+
+- name: Reload service sshd
+  ansible.builtin.systemd:
+    name: sshd.service
+    state: reloaded
